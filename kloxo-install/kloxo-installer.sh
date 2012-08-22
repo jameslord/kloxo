@@ -45,11 +45,14 @@ if [ "$#" == 0 ] ; then
 	echo "   5. rename kloxo-thirdparty.<version>.zip to kloxo-thirdparty.2012.zip"
 	echo
 	exit;
+# all files are of fixed version, and will be downloaded from lxcenter or its mirror.
 fi
 
 APP_NAME=Kloxo
 
+# the option could be --type=master
 request1=$1
+# this is used to get the value from input
 APP_TYPE=${request1#--type\=}
 
 if [ ! $APP_TYPE == 'master' ] && [ ! $APP_TYPE == 'slave' ] ; then
@@ -62,6 +65,7 @@ DB_ROOTPWD=${request2#--db-rootpassword\=}
 
 SELINUX_CHECK=/usr/sbin/selinuxenabled
 SELINUX_CFG=/etc/selinux/config
+# why archname is needed, since kloxo only support certain linux distribution?
 ARCH_CHECK=$(eval uname -m)
 
 E_SELINUX=50
@@ -113,6 +117,8 @@ function get_yes_no {
 
 clear
 
+# line to check whether kloxo could be installed
+
 # Check if user is root.
 if [ "$UID" -ne "0" ] ; then
 	echo -en "Installing as \"root\"        " $C_NO
@@ -150,6 +156,8 @@ else
 		echo -e "\a\n$APP_NAME cannot be installed or executed with SELinux enabled. " \
 			"The installer can disable it, but a reboot will be required.\n"
 		echo -e "You will have to restart the installer again after reboot.\n"
+		# the yes or no value is returned to $?
+		# why seliux must be disabled in orderto use kloxo
 		get_yes_no "Do you want to disable SELinux and reboot?" 1
 		if [ "$?" -eq "1" ] ; then 
 			echo -e "Disabling SELinux ...\n"
@@ -160,6 +168,7 @@ else
 			reboot
 			exit $E_REBOOT
 		else
+			# if don't disable SELinux, the installation will also quit
 			echo -e "Please DISABLE SELinux manually and try again.\nAborting ...\n"
 			exit $E_SELINUX
 		fi
@@ -183,11 +192,14 @@ echo -e "\n\n	Note some file downloads may not show a progress bar so please, do
 echo -e "	When it's finished, you will be presented with a welcome message and further instructions.\n\n"
 
 read -n 1 -p "Press any key to continue ..."
+# /////////////////////////////////////////////////////////////////////////////////////////////
 
+# real issue happens here
 # Start install
 yum -y install php php-mysql wget zip unzip
 export PATH=/usr/sbin:/sbin:$PATH
 
+# the file named kloxo-install.zip should be downloaded to the current directory
 if [ ! -f ./kloxo-install.zip ] ; then
 	wget http://download.lxcenter.org/download/kloxo-install.zip
 fi
@@ -198,10 +210,14 @@ else
 	unzip -oq kloxo-install.zip
 	cd kloxo-install
 fi
+# ////////////////////////////////////////////////////////////////////////////////////////////
 
+# the files which are used to install kloxo is downloaded online, from kloxo download site:)
+# prefer to use php which is installed by kloxo, php is firstly installed using yum command.
 if [ -f /usr/local/lxlabs/ext/php/php ] ; then
 	/usr/local/lxlabs/ext/php/php kloxo-installer.php --install-type=$APP_TYPE $* | tee kloxo_install.log
 else
+# php is used as kind of script language in kloxo,
 	php kloxo-installer.php --install-type=$APP_TYPE $* | tee kloxo_install.log
 fi
 
